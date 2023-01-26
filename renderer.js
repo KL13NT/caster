@@ -6,9 +6,6 @@ const onAnimationEnd = (e) => {
 	e.target.parentNode.removeChild(e.target);
 };
 
-// TODO: add special key rendering and icons
-// TODO: research addons
-
 const SpecialKey = (content) => {
 	return html`<span class="special">${content}</span>`;
 };
@@ -17,15 +14,26 @@ const NormalKey = (content) => {
 	return html`<span class="normal">${content}</span>`;
 };
 
-window.electronAPI.handleKey((_, { normal, modifiers }) => {
-	document.removeEventListener("animationend", onAnimationEnd);
+let previousLog = "";
+let previousLogTime = 0;
 
+document.removeEventListener("animationend", onAnimationEnd);
+
+window.electronAPI.handleKey((_, { normal, modifiers }) => {
 	const normalKeyMarkup = normal.map(NormalKey);
 	const specialKeyMarkup = modifiers.map(SpecialKey);
+	const log = [...specialKeyMarkup, ...normalKeyMarkup].join(" + ");
+
+	if (log === previousLog && previousLogTime + 500 > Date.now()) {
+		return;
+	}
 
 	const node = document.createElement("p");
 	node.classList.add("key");
-	node.innerHTML = [...specialKeyMarkup, ...normalKeyMarkup].join(" + ");
+	node.innerHTML = log;
+
+	previousLog = log;
+	previousLogTime = Date.now();
 
 	root.appendChild(node);
 

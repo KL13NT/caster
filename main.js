@@ -51,8 +51,13 @@ const createKeyboardListener = (win) => {
 	});
 };
 
-const createTrayMenu = () => {
+const createTrayMenu = (window) => {
 	const tray = new Tray("./caster.png");
+
+	tray.on("click", () => {
+		window.focus();
+	});
+
 	const contextMenu = Menu.buildFromTemplate([
 		{
 			label: "Exit",
@@ -65,14 +70,14 @@ const createTrayMenu = () => {
 	tray.setContextMenu(contextMenu);
 };
 
-const createWindow = (width, height) => {
+const createWindow = async (width, height) => {
 	const win = new BrowserWindow({
 		frame: false,
 		titleBarStyle: "hidden",
 		transparent: true,
 		alwaysOnTop: true,
 		minimizable: false,
-		focusable: false,
+		skipTaskbar: true,
 		width: width - 20,
 		height: height - 20,
 		webPreferences: {
@@ -80,22 +85,28 @@ const createWindow = (width, height) => {
 		},
 	});
 
-	win.focus();
 	win.setIgnoreMouseEvents(true, { forward: false });
-	win.loadFile("index.html");
+	await win.loadFile("index.html");
 
 	createKeyboardListener(win);
+
+	return win;
 };
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
 	const { screen } = require("electron");
 	const primaryDisplay = screen.getPrimaryDisplay();
 	const { width, height } = primaryDisplay.workAreaSize;
 
-	createWindow(width, height);
-	createTrayMenu();
+	const window = await createWindow(width, height);
+	createTrayMenu(window);
+
+	window.focus();
 
 	app.on("activate", () => {
-		if (BrowserWindow.getAllWindows().length === 0) createWindow();
+		if (BrowserWindow.getAllWindows().length === 0) {
+			createWindow();
+			window.focus();
+		}
 	});
 });
